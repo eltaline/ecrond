@@ -442,7 +442,7 @@ func main() {
 							break
 						}
 
-						appLogger.Info().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, command, output, err)
+						appLogger.Info().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s]", cpath, sfpath, command, output)
 
 					}
 
