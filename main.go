@@ -272,7 +272,7 @@ func main() {
 	appLogger.Info().Msgf("Log directory: [%s]", logdir)
 	appLogger.Info().Msgf("Log mode: [%v]", logmode)
 
-	// Populate path settings from configuration to map[string]Settings
+	// Populate path settings
 
 	for cpath, msettings := range config.Get("paths").(map[interface{}]interface{}) {
 
