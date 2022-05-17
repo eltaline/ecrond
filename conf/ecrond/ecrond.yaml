@@ -1,0 +1,15 @@
+tracemode: false
+debugmode: false
+
+pidfile: "/run/ecrond/ecrond.pid"
+
+loglevel: "info"
+logdir: "/var/log/ecrond"
+logmode: 0644
+
+paths:
+
+ "/tmp":
+  recursive: true
+  commands:
+   - "logger 'tmp directory is changed'"
