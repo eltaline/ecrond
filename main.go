@@ -474,11 +474,11 @@ func main() {
 
 								output, err := QuickExec(command)
 								if err != nil {
-									appLogger.Error().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Event [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, event, command, output, err)
+									appLogger.Error().Msgf("Run command | Monitored path [%s] | Changed path [%s] | Event [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, event, command, output, err)
 									break
 								}
 
-								appLogger.Info().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Event [%s] | Command [%s] | Output [%s]", cpath, sfpath, event, command, output)
+								appLogger.Info().Msgf("Run command | Monitored path [%s] | Changed path [%s] | Event [%s] | Command [%s] | Output [%s]", cpath, sfpath, event, command, output)
 
 							}
 
