@@ -41,11 +41,16 @@ import (
 
 type Settings struct {
 	Recursive bool
+	Events    []string
 	Commands  []string
 }
 
 func (c *Settings) AddCommand(comm string) {
 	c.Commands = append(c.Commands, comm)
+}
+
+func (c *Settings) AddEvent(evnt string) {
+	c.Events = append(c.Events, evnt)
 }
 
 // Global variables
@@ -72,7 +77,6 @@ var (
 	pidfile string = "/run/ecrond/ecrond.pid"
 
 	esettings = make(map[string]Settings)
-
 )
 
 // Main function
@@ -154,9 +158,33 @@ func main() {
 
 		v = validate.Map(pathOptions)
 		v.StringRule("recursive", "bool")
+		v.StringRule("events", "slice")
+		v.StringRule("commands", "slice")
 
 		if !v.Validate() {
 			fmt.Println(v.Errors)
+			os.Exit(1)
+		}
+
+		if pathOptions["events"] == nil {
+			fmt.Printf("Empty events slice | Monitored path [%s] | empty error\n", cpath)
+			os.Exit(1)
+		}
+
+		pathEvnt := make(map[string]interface{})
+
+		for _, val := range pathOptions["events"].([]interface{}) {
+			pathEvnt["event"] = val.(string)
+			v := validate.Map(pathEvnt)
+			v.StringRule("event", "string")
+			if !v.Validate() {
+				fmt.Println(v.Errors)
+				os.Exit(1)
+			}
+		}
+
+		if pathOptions["commands"] == nil {
+			fmt.Printf("Empty commands slice | Monitored path [%s] | empty error\n", cpath)
 			os.Exit(1)
 		}
 
@@ -189,14 +217,14 @@ func main() {
 	logfile := filepath.Clean(logdir + "/" + "app.log")
 	applogfile, err := os.OpenFile(logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, logmode)
 	if err != nil {
-		fmt.Printf("Can`t open/create app log file | File [%s] | %v", logfile, err)
+		fmt.Printf("Can`t open/create app log file | File [%s] | %v\n", logfile, err)
 		os.Exit(1)
 	}
 	defer applogfile.Close()
 
 	err = os.Chmod(logfile, logmode)
 	if err != nil {
-		fmt.Printf("Can`t chmod log file | File [%s] | %v", logfile, err)
+		fmt.Printf("Can`t chmod log file | File [%s] | %v\n", logfile, err)
 		os.Exit(1)
 	}
 
@@ -281,12 +309,21 @@ func main() {
 		appLogger.Info().Msgf("Path: [%s]", scpath)
 
 		var rcrsv bool
+		var evnts []string
 		var comms []string
 
 		for key, val := range msettings.(map[interface{}]interface{}) {
 
 			if key == "recursive" {
 				rcrsv = val.(bool)
+			}
+
+			if key == "events" {
+				for _, event := range val.([]interface{}) {
+					sevent := event.(string)
+					evnts = append(evnts, sevent)
+					appLogger.Info().Msgf("Event: [%s]", sevent)
+				}
 			}
 
 			if key == "commands" {
@@ -301,6 +338,7 @@ func main() {
 		mset := esettings[scpath]
 
 		mset.Recursive = rcrsv
+		mset.Events = evnts
 		mset.Commands = comms
 
 		esettings[scpath] = mset
@@ -330,20 +368,20 @@ func main() {
 				ipath = ipath + "/..."
 			}
 
-			err = notify.Watch(ipath, nc, notify.InCloseWrite, notify.InMovedTo)
+			err = notify.Watch(ipath, nc, notify.InCloseWrite, notify.InCloseNowrite, notify.InMovedTo, notify.InMovedFrom, notify.InMoveSelf, notify.InCreate, notify.InDelete, notify.InDeleteSelf, notify.InModify, notify.InAttrib, notify.InAccess, notify.InOpen)
 			if err != nil {
-				appLogger.Error().Msgf("Can`t create notify.InCloseWrite and notify.InMovedTo watcher | Directory [%s] | %v", ipath, err)
-				fmt.Printf("Can`t create notify.InCloseWrite and notify.InMovedTo watcher | Directory [%s] | %v\n", ipath, err)
+				appLogger.Error().Msgf("Can`t create notify watcher | Path [%s] | %v", ipath, err)
+				fmt.Printf("Can`t create notify watcher | Path [%s] | %v\n", ipath, err)
 				os.Exit(1)
 			}
 			defer notify.Stop(nc)
 
-			appLogger.Info().Msgf("Started watch path via notify watcher | Directory [%s]", ipath)
+			appLogger.Info().Msgf("Started watch path via notify watcher | Path [%s]", ipath)
 
 		} else {
 
-			appLogger.Error().Msgf("Unknown type object | Object [%s] | %v", ipath, err)
-			fmt.Printf("Unknown type object | Object [%s] | %v\n", ipath, err)
+			appLogger.Error().Msgf("Can`t create notify watcher | Unknown type object | Object [%s]", ipath)
+			fmt.Printf("Can`t create notify watcher | Unknown type object | Object [%s]\n", ipath)
 			os.Exit(1)
 
 		}
@@ -419,30 +457,32 @@ func main() {
 			wg.Add(1)
 
 			evpath := event.Path()
+			evtype := fmt.Sprintf("%s", event.Event())
 			sfpath := evpath
 
-			_, err := os.Stat(sfpath)
-			if err != nil {
-				appLogger.Error().Msgf("Can`t stat file or directory via event from watcher | Path [%s] | %v", sfpath, err)
-				wg.Done()
-				continue
-			}
-
-			for cpath, _ := range esettings {
+			for cpath := range esettings {
 
 				if strings.Contains(sfpath, cpath) {
 
 					mset := esettings[cpath]
 
-					for _, command := range mset.Commands {
+					for _, event := range mset.Events {
 
-						output, err := QuickExec(command)
-						if err != nil {
-							appLogger.Error().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, command, output, err)
-							break
+						if event == evtype {
+
+							for _, command := range mset.Commands {
+
+								output, err := QuickExec(command)
+								if err != nil {
+									appLogger.Error().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Event [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, event, command, output, err)
+									break
+								}
+
+								appLogger.Info().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Event [%s] | Command [%s] | Output [%s]", cpath, sfpath, event, command, output)
+
+							}
+
 						}
-
-						appLogger.Info().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s]", cpath, sfpath, command, output)
 
 					}
 

@@ -10,6 +10,19 @@ logmode: 0644
 paths:
 
  "/tmp":
-  recursive: true
+  recursive: false
+  events:
+   - "notify.InCloseWrite"
+   #- "notify.InCloseNowrite"
+   - "notify.InMovedTo"
+   #- "notify.InMovedFrom"
+   #- "notify.InMoveSelf"
+   #- "notify.InCreate"
+   - "notify.InDelete"
+   #- "notify.InDeleteSelf"
+   #- "notify.InModify"
+   #- "notify.InAttrib"
+   #- "notify.InAccess"
+   #- "notify.InOpen"
   commands:
    - "logger 'tmp directory is changed'"
