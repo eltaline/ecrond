@@ -71,10 +71,6 @@ nfpms:
       - src: "conf/logrotate.d/ecrond"
         dst: "/etc/logrotate.d/ecrond"
 
-      - src: "conf/ecrond/ecrond.conf"
-        dst: "/etc/ecrond/ecrond.conf"
-        type: config
-
     scripts:
       postinstall: "scripts/postinstall.sh"
 
