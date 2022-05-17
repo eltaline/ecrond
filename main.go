@@ -436,15 +436,13 @@ func main() {
 
 					for _, command := range mset.Commands {
 
-						fmt.Println(command)
-
 						output, err := QuickExec(command)
 						if err != nil {
 							appLogger.Error().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, command, output, err)
 							break
 						}
 
-						fmt.Printf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, command, output, err)
+						appLogger.Info().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, command, output, err)
 
 					}
 
