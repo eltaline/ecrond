@@ -119,6 +119,8 @@ func main() {
 
 	// fmt.Printf("config data: \n %#v\n", config.Data())
 
+	// Validate configuration
+
 	v := validate.Map(config.Data())
 	v.StringRule("tracemode", "bool")
 	v.StringRule("debugmode", "bool")
@@ -270,6 +272,8 @@ func main() {
 	appLogger.Info().Msgf("Log directory: [%s]", logdir)
 	appLogger.Info().Msgf("Log mode: [%v]", logmode)
 
+	// Populate path settings from configuration to map[string]Settings
+
 	for cpath, msettings := range config.Get("paths").(map[interface{}]interface{}) {
 
 		scpath := cpath.(string)
@@ -334,7 +338,7 @@ func main() {
 			}
 			defer notify.Stop(nc)
 
-			appLogger.Info().Msgf("Started watch directory via recursive notify watcher | Directory [%s]", ipath)
+			appLogger.Info().Msgf("Started watch path via notify watcher | Directory [%s]", ipath)
 
 		} else {
 
@@ -432,11 +436,15 @@ func main() {
 
 					for _, command := range mset.Commands {
 
+						fmt.Println(command)
+
 						output, err := QuickExec(command)
 						if err != nil {
 							appLogger.Error().Msgf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, command, output, err)
 							break
 						}
+
+						fmt.Printf("Run command | Monitored Path [%s] | Changed Path [%s] | Command [%s] | Output [%s] | %v", cpath, sfpath, command, output, err)
 
 					}
 
