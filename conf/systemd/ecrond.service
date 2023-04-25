@@ -15,7 +15,7 @@ ExecStart=/usr/sbin/ecrond
 ExecStop=/bin/kill -s TERM $MAINPID
 
 Restart=always
-RestartSec=60s
+RestartSec=300s
 
 StandardOutput=syslog
 StandardError=syslog
